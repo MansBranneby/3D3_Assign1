@@ -48,18 +48,30 @@ void MaterialDX::setDiffuse(Color c)
 
 int MaterialDX::compileMaterial(std::string& errString)
 {
+	const int MACRO_SIZE = 10;
 	std::map<ShaderType, std::string>::iterator it = shaderFileNames.begin();
 	for (it; it != shaderFileNames.end(); it++)
 	{
 		if (it->second != "")
 		{
-			D3D_SHADER_MACRO* macros;
-			createShaderMacros(macros, it->first);
+			std::vector<std::string> defines = createShaderMacros(it->first);
+			D3D_SHADER_MACRO macros[MACRO_SIZE];
+			for (int i = 0; i < MACRO_SIZE*2; i+=2)
+			{
+				if (i < defines.size())
+					macros[i / 2] = { defines[i].c_str(), defines[i + 1].c_str()};
+				else
+					macros[i / 2] = { NULL, NULL };
+			}
 
-			const wchar_t* widecstr = std::wstring(it->second.begin(), it->second.end()).c_str();
+			auto debug1 = _shadercompileStrings[it->first].first.c_str();
+			auto debug2 = _shadercompileStrings[it->first].second.c_str();
+		
+
+			std::wstring filename = std::wstring(it->second.begin(), it->second.end()).c_str();
 			HRESULT hr = D3DCompileFromFile(
-				widecstr, // filename
-				nullptr,		// optional macros
+				filename.c_str(), // filename
+				macros,		// optional macros
 				nullptr,		// optional include files
 				_shadercompileStrings[it->first].first.c_str(),		// entry point
 				_shadercompileStrings[it->first].second.c_str(),		// shader model (target)
@@ -90,10 +102,12 @@ int MaterialDX::compileMaterial(std::string& errString)
 
 void MaterialDX::addConstantBuffer(std::string name, unsigned int location)
 {
+	_constantBuffers[location] = new ConstantBufferDX(name, location);
 }
 
 void MaterialDX::updateConstantBuffer(const void* data, size_t size, unsigned int location)
 {
+	_constantBuffers[location]->setData(data, size, this, location);
 }
 
 int MaterialDX::enable()
@@ -105,6 +119,26 @@ void MaterialDX::disable()
 {
 }
 
-void MaterialDX::createShaderMacros(D3D_SHADER_MACRO* macros, ShaderType type)
+std::vector<std::string> MaterialDX::createShaderMacros(ShaderType type)
 {
+	// Convert shaderDefines to parsed strings
+	auto it = shaderDefines[type].begin();
+	std::string defStr = *it;
+	
+	char* tempStr = new char[defStr.size()];
+	strcpy(tempStr, defStr.c_str());
+
+	std::string line, define,value;
+	std::vector<std::string> defVec;
+	std::stringstream defStream(tempStr);
+	while (std::getline(defStream, line))
+	{
+		define = line.substr(0, line.rfind(' '));
+		value = line.substr(line.rfind(' ')+1, line.size());
+
+		defVec.push_back(define);
+		defVec.push_back(value);
+	}
+
+	return defVec;
 }

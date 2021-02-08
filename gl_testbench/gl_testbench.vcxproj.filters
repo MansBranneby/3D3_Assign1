@@ -96,6 +96,9 @@
     <ClCompile Include="MaterialDX.cpp">
       <Filter>Source Files\DirectX</Filter>
     </ClCompile>
+    <ClCompile Include="ConstantBufferDX.cpp">
+      <Filter>Source Files\DirectX</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Renderer.h">
@@ -174,7 +177,10 @@
       <Filter>Source Files\DirectX</Filter>
     </ClInclude>
     <ClInclude Include="MaterialDX.h">
-      <Filter>Header Files</Filter>
+      <Filter>Source Files\DirectX</Filter>
+    </ClInclude>
+    <ClInclude Include="ConstantBufferDX.h">
+      <Filter>Source Files\DirectX</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -184,5 +190,13 @@
     <None Include="..\assets\GL45\VertexShader.glsl">
       <Filter>Resource Files</Filter>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="..\assets\DX12\VertexShader.hlsl">
+      <Filter>Resource Files</Filter>
+    </FxCompile>
+    <FxCompile Include="..\assets\DX12\FragmentShader.hlsl">
+      <Filter>Resource Files</Filter>
+    </FxCompile>
   </ItemGroup>
 </Project>

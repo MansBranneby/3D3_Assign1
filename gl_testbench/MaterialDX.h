@@ -1,12 +1,17 @@
 #pragma once
 
 #include "Material.h"
+#include "ConstantBufferDX.h"
+
 #include <windows.h>
 #include <d3d12.h>
 #include <dxgi1_6.h> //Only used for initialization of the device and swap chain.
 #include <d3dcompiler.h>
 
 #include <iterator>
+#include <iostream>
+#include <sstream>
+#include <vector>
 
 template<class Interface>
 inline void SafeRelease(
@@ -66,7 +71,9 @@ private:
 	//D3D12_GRAPHICS_PIPELINE_STATE_DESC _gpsd = {};
 	//ID3D12PipelineState* _PipeLineState = nullptr;
 
-	void createShaderMacros(D3D_SHADER_MACRO* macros, ShaderType type);
+	std::map<unsigned int, ConstantBufferDX*> _constantBuffers;
+
+	std::vector<std::string> createShaderMacros(ShaderType type);
 };
 
 
