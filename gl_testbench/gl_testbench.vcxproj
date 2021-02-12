@@ -151,6 +151,7 @@
     <ClCompile Include="ConstantBuffer.cpp" />
     <ClCompile Include="ConstantBufferDX.cpp" />
     <ClCompile Include="MaterialDX.cpp" />
+    <ClCompile Include="MeshDX.cpp" />
     <ClCompile Include="OpenGL\ConstantBufferGL.cpp" />
     <ClCompile Include="OpenGL\MaterialGL.cpp" />
     <ClCompile Include="OpenGL\MeshGL.cpp" />
@@ -162,8 +163,10 @@
     <ClCompile Include="OpenGL\TransformGL.cpp" />
     <ClCompile Include="OpenGL\VertexBufferGL.cpp" />
     <ClCompile Include="RendererDX.cpp" />
+    <ClCompile Include="RenderStateDX.cpp" />
     <ClCompile Include="Sampler2D.cpp" />
     <ClCompile Include="Scene.cpp" />
+    <ClCompile Include="TransformDX.cpp" />
     <ClCompile Include="VertexBuffer.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="main.cpp" />
@@ -180,6 +183,7 @@
     <ClInclude Include="ConstantBuffer.h" />
     <ClInclude Include="ConstantBufferDX.h" />
     <ClInclude Include="MaterialDX.h" />
+    <ClInclude Include="MeshDX.h" />
     <ClInclude Include="OpenGL\ConstantBufferGL.h" />
     <ClInclude Include="OpenGL\MaterialGL.h" />
     <ClInclude Include="OpenGL\MeshGL.h" />
@@ -191,8 +195,10 @@
     <ClInclude Include="OpenGL\TransformGL.h" />
     <ClInclude Include="OpenGL\VertexBufferGL.h" />
     <ClInclude Include="RendererDX.h" />
+    <ClInclude Include="RenderStateDX.h" />
     <ClInclude Include="Sampler2D.h" />
     <ClInclude Include="Scene.h" />
+    <ClInclude Include="TransformDX.h" />
     <ClInclude Include="VertexBuffer.h" />
     <ClInclude Include="Camera.h" />
     <ClInclude Include="IA.h" />

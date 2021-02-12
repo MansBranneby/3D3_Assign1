@@ -44,6 +44,7 @@ void MaterialDX::removeShader(ShaderType type)
 
 void MaterialDX::setDiffuse(Color c)
 {
+	color = c;
 }
 
 int MaterialDX::compileMaterial(std::string& errString)
@@ -64,10 +65,6 @@ int MaterialDX::compileMaterial(std::string& errString)
 					macros[i / 2] = { NULL, NULL };
 			}
 
-			auto debug1 = _shadercompileStrings[it->first].first.c_str();
-			auto debug2 = _shadercompileStrings[it->first].second.c_str();
-		
-
 			std::wstring filename = std::wstring(it->second.begin(), it->second.end()).c_str();
 			HRESULT hr = D3DCompileFromFile(
 				filename.c_str(), // filename
@@ -87,27 +84,19 @@ int MaterialDX::compileMaterial(std::string& errString)
 		}
 	}
 
-	////// Input Layout //////
-	D3D12_INPUT_ELEMENT_DESC inputElementDesc[] = {
-		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0,	D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-		{ "COLOR"	, 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-		{ "TEXTCOORD"	, 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
-	};
-
-	_inputLayoutDesc.pInputElementDescs = inputElementDesc;
-	_inputLayoutDesc.NumElements = ARRAYSIZE(inputElementDesc);
-
 	return 0;
 }
 
 void MaterialDX::addConstantBuffer(std::string name, unsigned int location)
 {
-	_constantBuffers[location] = new ConstantBufferDX(name, location, _constantBuffer);
+	_constantBuffers[location] = new ConstantBufferDX(name, location);
 }
 
 void MaterialDX::updateConstantBuffer(const void* data, size_t size, unsigned int location)
 {
 	_constantBuffers[location]->setData(data, size, this, location);
+	Color* c = (Color*)data;
+	setDiffuse(*c);
 }
 
 int MaterialDX::enable()
@@ -119,57 +108,9 @@ void MaterialDX::disable()
 {
 }
 
-void MaterialDX::createConstantBuffer(ID3D12Device5* device)
+ID3DBlob* MaterialDX::getShaderBlob(ShaderType type)
 {
-	// Create descriptor heap
-	for (int i = 0; i < 2; i++)
-	{
-		D3D12_DESCRIPTOR_HEAP_DESC heapDescriptorDesc = {};
-		heapDescriptorDesc.NumDescriptors = 1;
-		heapDescriptorDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-		heapDescriptorDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-		HRESULT hr = device->CreateDescriptorHeap(&heapDescriptorDesc, IID_PPV_ARGS(&_descriptorHeap[i]));
-		if (FAILED(hr))
-			MessageBox(NULL, L"Error", L"Error: _descriptorHeap", MB_OK | MB_ICONERROR);
-	}
-
-	// Create constant buffer
-	UINT cbSizeAligned = (sizeof(float) * 4 + 255) & ~255;	// 256-byte aligned CB.
-	D3D12_HEAP_PROPERTIES heapProperties = {};
-	heapProperties.Type = D3D12_HEAP_TYPE_UPLOAD;
-	heapProperties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
-	heapProperties.CreationNodeMask = 1; //used when multi-gpu
-	heapProperties.VisibleNodeMask = 1; //used when multi-gpu
-	heapProperties.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
-
-	D3D12_RESOURCE_DESC resourceDesc = {};
-	resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-	resourceDesc.Width = cbSizeAligned;
-	resourceDesc.Height = 1;
-	resourceDesc.DepthOrArraySize = 1;
-	resourceDesc.MipLevels = 1;
-	resourceDesc.SampleDesc.Count = 1;
-	resourceDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-
-	//Create a resource heap, descriptor heap, and pointer to cbv for each frame
-	for (int i = 0; i < 2; i++)
-	{
-		device->CreateCommittedResource(
-			&heapProperties,
-			D3D12_HEAP_FLAG_NONE,
-			&resourceDesc,
-			D3D12_RESOURCE_STATE_GENERIC_READ,
-			nullptr,
-			IID_PPV_ARGS(&_constantBuffer[i])
-		);
-
-		_constantBuffer[i]->SetName(L"cb heap");
-
-		D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = {};
-		cbvDesc.BufferLocation = _constantBuffer[i]->GetGPUVirtualAddress();
-		cbvDesc.SizeInBytes = cbSizeAligned;
-		device->CreateConstantBufferView(&cbvDesc, _descriptorHeap[i]->GetCPUDescriptorHandleForHeapStart());
-	}
+	return _shaderBlob[(int)type];
 }
 
 std::vector<std::string> MaterialDX::createShaderMacros(ShaderType type)

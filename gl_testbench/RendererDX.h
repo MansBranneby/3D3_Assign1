@@ -2,6 +2,8 @@
 
 #include "Renderer.h"
 #include "MaterialDX.h"
+#include "MeshDX.h"
+#include "RenderStateDX.h"
 
 #include <SDL.h>
 #include "SDL_syswm.h"
@@ -18,7 +20,7 @@ class RendererDX : public Renderer
 public:
 	RendererDX();
 	~RendererDX();
-	
+
 	Material* makeMaterial(const std::string& name);
 	Mesh* makeMesh();
 	//VertexBuffer* makeVertexBuffer();
@@ -54,6 +56,7 @@ private:
 	ID3D12GraphicsCommandList* _commandList = nullptr;
 
 	ID3D12RootSignature* _rootSignature = nullptr;
+	D3D12_INPUT_LAYOUT_DESC _inputLayoutDesc;
 
 	ID3D12DescriptorHeap* _descriptorHeapBackBuffer = nullptr;
 	ID3D12DescriptorHeap* _descriptorHeap[2] = {};
@@ -68,9 +71,13 @@ private:
 	D3D12_RECT _scissorRect = {};
 
 	ID3D12Resource1* _renderTargets[2] = {}; // Backbuffer
+	ID3D12Resource1* _constantBuffers[2] = {};
+	ID3D12Resource1* _SRVResource = nullptr;
+
+	ID3D12PipelineState* gPipeLineState = nullptr;
 
 	float _clearColour[4] = {0.0f, 0.0f, 0.0f, 0.0f};
-	
+
 	void createDevice();
 	void createCommandQueue();
 	void createFence();
@@ -78,4 +85,6 @@ private:
 	void createViewPort(unsigned int width, unsigned int height);
 	void createRootSignature();
 	void createDescriptorHeap();
+	void createConstantBuffers();
+	void createSRV();
 };
