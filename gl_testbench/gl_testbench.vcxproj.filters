@@ -19,6 +19,9 @@
     <Filter Include="Source Files\DirectX">
       <UniqueIdentifier>{4f9f50e0-3334-48b4-ad10-5ce398b77cb6}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\DirectX\Header Files">
+      <UniqueIdentifier>{8d3c7e06-c134-4861-ac04-90a8b3335ad5}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -99,6 +102,15 @@
     <ClCompile Include="ConstantBufferDX.cpp">
       <Filter>Source Files\DirectX</Filter>
     </ClCompile>
+    <ClCompile Include="MeshDX.cpp">
+      <Filter>Source Files\DirectX</Filter>
+    </ClCompile>
+    <ClCompile Include="TransformDX.cpp">
+      <Filter>Source Files\DirectX</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderStateDX.cpp">
+      <Filter>Source Files\DirectX</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Renderer.h">
@@ -173,14 +185,23 @@
     <ClInclude Include="OpenGL\VertexBufferGL.h">
       <Filter>Source Files\OpenGL</Filter>
     </ClInclude>
-    <ClInclude Include="RendererDX.h">
-      <Filter>Source Files\DirectX</Filter>
-    </ClInclude>
     <ClInclude Include="MaterialDX.h">
-      <Filter>Source Files\DirectX</Filter>
+      <Filter>Source Files\DirectX\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MeshDX.h">
+      <Filter>Source Files\DirectX\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TransformDX.h">
+      <Filter>Source Files\DirectX\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RendererDX.h">
+      <Filter>Source Files\DirectX\Header Files</Filter>
     </ClInclude>
     <ClInclude Include="ConstantBufferDX.h">
-      <Filter>Source Files\DirectX</Filter>
+      <Filter>Source Files\DirectX\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderStateDX.h">
+      <Filter>Source Files\DirectX\Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

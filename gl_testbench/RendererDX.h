@@ -2,6 +2,8 @@
 
 #include "Renderer.h"
 #include "MaterialDX.h"
+#include "MeshDX.h"
+#include "RenderState.h"
 
 #include <SDL.h>
 #include "SDL_syswm.h"
@@ -12,6 +14,13 @@
 
 #pragma comment(lib,"SDL2.lib")
 #pragma comment(lib,"SDL2main.lib")
+
+struct CBStruct
+{
+	float color[4];
+	float translate[3];
+	float rotate[3];
+};
 
 class RendererDX : public Renderer
 {
@@ -68,6 +77,8 @@ private:
 	D3D12_RECT _scissorRect = {};
 
 	ID3D12Resource1* _renderTargets[2] = {}; // Backbuffer
+	ID3D12Resource1* _constantBuffers[2] = {};
+	ID3D12Resource1* _SRVResource = nullptr;
 
 	float _clearColour[4] = {0.0f, 0.0f, 0.0f, 0.0f};
 
@@ -78,5 +89,6 @@ private:
 	void createViewPort(unsigned int width, unsigned int height);
 	void createRootSignature();
 	void createDescriptorHeap();
-	ID3D12Resource1** createConstantBuffer(int bufferIndex);
+	void createConstantBuffers();
+	void createSRV();
 };

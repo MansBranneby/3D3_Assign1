@@ -1,10 +1,9 @@
 #include "ConstantBufferDX.h"
 
-ConstantBufferDX::ConstantBufferDX(std::string NAME, unsigned int location, ID3D12Resource1** constantBuffer)
+ConstantBufferDX::ConstantBufferDX(std::string NAME, unsigned int location)
 {
 	_name = NAME;
 	_location = location;
-	_constantBuffer = constantBuffer;
 }
 
 ConstantBufferDX::~ConstantBufferDX()

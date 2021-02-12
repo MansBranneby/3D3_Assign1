@@ -102,7 +102,7 @@ int MaterialDX::compileMaterial(std::string& errString)
 
 void MaterialDX::addConstantBuffer(std::string name, unsigned int location)
 {
-	_constantBuffers[location] = new ConstantBufferDX(name, location, _constantBuffer);
+	_constantBuffers[location] = new ConstantBufferDX(name, location);
 }
 
 void MaterialDX::updateConstantBuffer(const void* data, size_t size, unsigned int location)
@@ -117,11 +117,6 @@ int MaterialDX::enable()
 
 void MaterialDX::disable()
 {
-}
-
-void MaterialDX::createConstantBuffer(ID3D12Resource1** constantBuffer)
-{
-	_constantBuffer = constantBuffer;
 }
 
 std::vector<std::string> MaterialDX::createShaderMacros(ShaderType type)
