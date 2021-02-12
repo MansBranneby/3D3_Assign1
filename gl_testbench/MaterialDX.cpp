@@ -119,6 +119,59 @@ void MaterialDX::disable()
 {
 }
 
+void MaterialDX::createConstantBuffer(ID3D12Device5* device)
+{
+	// Create descriptor heap
+	for (int i = 0; i < 2; i++)
+	{
+		D3D12_DESCRIPTOR_HEAP_DESC heapDescriptorDesc = {};
+		heapDescriptorDesc.NumDescriptors = 1;
+		heapDescriptorDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+		heapDescriptorDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+		HRESULT hr = device->CreateDescriptorHeap(&heapDescriptorDesc, IID_PPV_ARGS(&_descriptorHeap[i]));
+		if (FAILED(hr))
+			MessageBox(NULL, L"Error", L"Error: _descriptorHeap", MB_OK | MB_ICONERROR);
+	}
+
+	// Create constant buffer
+	UINT cbSizeAligned = (sizeof(float) * 4 + 255) & ~255;	// 256-byte aligned CB.
+	D3D12_HEAP_PROPERTIES heapProperties = {};
+	heapProperties.Type = D3D12_HEAP_TYPE_UPLOAD;
+	heapProperties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+	heapProperties.CreationNodeMask = 1; //used when multi-gpu
+	heapProperties.VisibleNodeMask = 1; //used when multi-gpu
+	heapProperties.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+
+	D3D12_RESOURCE_DESC resourceDesc = {};
+	resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+	resourceDesc.Width = cbSizeAligned;
+	resourceDesc.Height = 1;
+	resourceDesc.DepthOrArraySize = 1;
+	resourceDesc.MipLevels = 1;
+	resourceDesc.SampleDesc.Count = 1;
+	resourceDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+
+	//Create a resource heap, descriptor heap, and pointer to cbv for each frame
+	for (int i = 0; i < 2; i++)
+	{
+		device->CreateCommittedResource(
+			&heapProperties,
+			D3D12_HEAP_FLAG_NONE,
+			&resourceDesc,
+			D3D12_RESOURCE_STATE_GENERIC_READ,
+			nullptr,
+			IID_PPV_ARGS(&_constantBuffer[i])
+		);
+
+		_constantBuffer[i]->SetName(L"cb heap");
+
+		D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = {};
+		cbvDesc.BufferLocation = _constantBuffer[i]->GetGPUVirtualAddress();
+		cbvDesc.SizeInBytes = cbSizeAligned;
+		device->CreateConstantBufferView(&cbvDesc, _descriptorHeap[i]->GetCPUDescriptorHandleForHeapStart());
+	}
+}
+
 std::vector<std::string> MaterialDX::createShaderMacros(ShaderType type)
 {
 	// Convert shaderDefines to parsed strings

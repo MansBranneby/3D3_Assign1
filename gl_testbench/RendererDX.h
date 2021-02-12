@@ -18,7 +18,7 @@ class RendererDX : public Renderer
 public:
 	RendererDX();
 	~RendererDX();
-
+	
 	Material* makeMaterial(const std::string& name);
 	Mesh* makeMesh();
 	//VertexBuffer* makeVertexBuffer();
@@ -78,5 +78,4 @@ private:
 	void createViewPort(unsigned int width, unsigned int height);
 	void createRootSignature();
 	void createDescriptorHeap();
-	void createConstantBuffer();
 };
