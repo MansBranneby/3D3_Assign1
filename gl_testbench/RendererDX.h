@@ -18,7 +18,7 @@ class RendererDX : public Renderer
 public:
 	RendererDX();
 	~RendererDX();
-
+	
 	Material* makeMaterial(const std::string& name);
 	Mesh* makeMesh();
 	//VertexBuffer* makeVertexBuffer();
@@ -70,7 +70,7 @@ private:
 	ID3D12Resource1* _renderTargets[2] = {}; // Backbuffer
 
 	float _clearColour[4] = {0.0f, 0.0f, 0.0f, 0.0f};
-
+	
 	void createDevice();
 	void createCommandQueue();
 	void createFence();
@@ -78,5 +78,4 @@ private:
 	void createViewPort(unsigned int width, unsigned int height);
 	void createRootSignature();
 	void createDescriptorHeap();
-	ID3D12Resource1** createConstantBuffer(int bufferIndex);
 };

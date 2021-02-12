@@ -4,7 +4,6 @@ ConstantBufferDX::ConstantBufferDX(std::string NAME, unsigned int location, ID3D
 {
 	_name = NAME;
 	_location = location;
-	_constantBuffer = constantBuffer;
 }
 
 ConstantBufferDX::~ConstantBufferDX()

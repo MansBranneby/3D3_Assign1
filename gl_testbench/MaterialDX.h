@@ -63,7 +63,7 @@ public:
 	// disable material
 	virtual void disable();
 
-	void createConstantBuffer(ID3D12Resource1** constantBuffer);
+	void createConstantBuffer(ID3D12Device5* device);
 
 private:
 	std::map<ShaderType, std::pair<std::string, std::string>> _shadercompileStrings;
@@ -73,6 +73,7 @@ private:
 
 	std::map<unsigned int, ConstantBufferDX*> _constantBuffers;
 	ID3D12Resource1** _constantBuffer = nullptr;
+	ID3D12DescriptorHeap* _descriptorHeap[2] = {};
 
 	std::vector<std::string> createShaderMacros(ShaderType type);
 };

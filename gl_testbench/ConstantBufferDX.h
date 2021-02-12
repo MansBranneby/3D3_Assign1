@@ -17,11 +17,8 @@ public:
 	// update the GPU memory.
 	void setData(const void* data, size_t size, Material* m, unsigned int location);
 	void bind(Material*);
-
 private:
 	std::string _name;
 	int _location;
-
-	ID3D12Resource1** _constantBuffer = {};
 };
 
