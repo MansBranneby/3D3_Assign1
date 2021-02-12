@@ -1,3 +1,5 @@
+#pragma once
+
 #include "Renderer.h"
 #include "MaterialDX.h"
 
@@ -11,7 +13,6 @@
 #pragma comment(lib,"SDL2.lib")
 #pragma comment(lib,"SDL2main.lib")
 
-#pragma once
 class RendererDX : public Renderer
 {
 public:
@@ -55,6 +56,7 @@ private:
 	ID3D12RootSignature* _rootSignature = nullptr;
 
 	ID3D12DescriptorHeap* _descriptorHeapBackBuffer = nullptr;
+	ID3D12DescriptorHeap* _descriptorHeap[2] = {};
 	UINT _rtvDescriptorSize = 0;
 
 	ID3D12Fence1* _fence = nullptr;
@@ -75,5 +77,6 @@ private:
 	void createRenderTargetDescriptor();
 	void createViewPort(unsigned int width, unsigned int height);
 	void createRootSignature();
-	void createShaders();
+	void createDescriptorHeap();
+	ID3D12Resource1** createConstantBuffer(int bufferIndex);
 };

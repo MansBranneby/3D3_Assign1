@@ -63,15 +63,16 @@ public:
 	// disable material
 	virtual void disable();
 
+	void createConstantBuffer(ID3D12Resource1** constantBuffer);
+
 private:
 	std::map<ShaderType, std::pair<std::string, std::string>> _shadercompileStrings;
 	ID3DBlob* _shaderBlob[4] = {nullptr, nullptr, nullptr, nullptr};
 
 	D3D12_INPUT_LAYOUT_DESC _inputLayoutDesc;
-	//D3D12_GRAPHICS_PIPELINE_STATE_DESC _gpsd = {};
-	//ID3D12PipelineState* _PipeLineState = nullptr;
 
 	std::map<unsigned int, ConstantBufferDX*> _constantBuffers;
+	ID3D12Resource1** _constantBuffer = nullptr;
 
 	std::vector<std::string> createShaderMacros(ShaderType type);
 };

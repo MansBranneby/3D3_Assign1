@@ -1,11 +1,16 @@
 #pragma once
+
 #include "ConstantBuffer.h"
+
+#include <windows.h>
+#include <d3d12.h>
+
 class ConstantBufferDX : public ConstantBuffer
 {
 
 
 public:
-	ConstantBufferDX(std::string NAME, unsigned int location);
+	ConstantBufferDX(std::string NAME, unsigned int location, ID3D12Resource1** constantBuffer);
 	~ConstantBufferDX();
 
 	// set data will update the buffer associated, including whatever is necessary to
@@ -16,5 +21,7 @@ public:
 private:
 	std::string _name;
 	int _location;
+
+	ID3D12Resource1** _constantBuffer = {};
 };
 
