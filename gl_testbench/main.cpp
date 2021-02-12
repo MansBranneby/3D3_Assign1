@@ -218,14 +218,14 @@ int initialiseTestbench()
 	techniques.push_back(renderer->makeTechnique(materials[3], renderer->makeRenderState()));
 
 	// create texture
-	Texture2D* fatboy = renderer->makeTexture2D();
-	fatboy->loadFromFile("../assets/textures/fatboy.png");
-	Sampler2D* sampler = renderer->makeSampler2D();
-	sampler->setWrap(WRAPPING::REPEAT, WRAPPING::REPEAT);
-	fatboy->sampler = sampler;
+	//Texture2D* fatboy = renderer->makeTexture2D();
+	//fatboy->loadFromFile("../assets/textures/fatboy.png");
+	//Sampler2D* sampler = renderer->makeSampler2D();
+	//sampler->setWrap(WRAPPING::REPEAT, WRAPPING::REPEAT);
+	//fatboy->sampler = sampler;
 
-	textures.push_back(fatboy);
-	samplers.push_back(sampler);
+	//textures.push_back(fatboy);
+	//samplers.push_back(sampler);
 
 	// pre-allocate one single vertex buffer for ALL triangles
 	pos = renderer->makeVertexBuffer(TOTAL_TRIS * sizeof(triPos), VertexBuffer::DATA_USAGE::STATIC);

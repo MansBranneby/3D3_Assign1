@@ -44,6 +44,7 @@ void MaterialDX::removeShader(ShaderType type)
 
 void MaterialDX::setDiffuse(Color c)
 {
+	color = c;
 }
 
 int MaterialDX::compileMaterial(std::string& errString)
@@ -64,10 +65,6 @@ int MaterialDX::compileMaterial(std::string& errString)
 					macros[i / 2] = { NULL, NULL };
 			}
 
-			auto debug1 = _shadercompileStrings[it->first].first.c_str();
-			auto debug2 = _shadercompileStrings[it->first].second.c_str();
-		
-
 			std::wstring filename = std::wstring(it->second.begin(), it->second.end()).c_str();
 			HRESULT hr = D3DCompileFromFile(
 				filename.c_str(), // filename
@@ -87,16 +84,6 @@ int MaterialDX::compileMaterial(std::string& errString)
 		}
 	}
 
-	////// Input Layout //////
-	D3D12_INPUT_ELEMENT_DESC inputElementDesc[] = {
-		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0,	D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-		{ "COLOR"	, 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-		{ "TEXTCOORD"	, 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
-	};
-
-	_inputLayoutDesc.pInputElementDescs = inputElementDesc;
-	_inputLayoutDesc.NumElements = ARRAYSIZE(inputElementDesc);
-
 	return 0;
 }
 
@@ -108,6 +95,8 @@ void MaterialDX::addConstantBuffer(std::string name, unsigned int location)
 void MaterialDX::updateConstantBuffer(const void* data, size_t size, unsigned int location)
 {
 	_constantBuffers[location]->setData(data, size, this, location);
+	Color* c = (Color*)data;
+	setDiffuse(*c);
 }
 
 int MaterialDX::enable()
@@ -117,6 +106,11 @@ int MaterialDX::enable()
 
 void MaterialDX::disable()
 {
+}
+
+ID3DBlob* MaterialDX::getShaderBlob(ShaderType type)
+{
+	return _shaderBlob[(int)type];
 }
 
 std::vector<std::string> MaterialDX::createShaderMacros(ShaderType type)

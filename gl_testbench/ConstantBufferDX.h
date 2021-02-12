@@ -5,6 +5,13 @@
 #include <windows.h>
 #include <d3d12.h>
 
+struct CBStruct
+{
+	float color[4];
+	float translate[4];
+	float rotate[3] = { 0.0f, 0.0f, 0.0f };
+};
+
 class ConstantBufferDX : public ConstantBuffer
 {
 
@@ -21,5 +28,6 @@ public:
 private:
 	std::string _name;
 	int _location;
+	CBStruct _cbData;
 };
 
