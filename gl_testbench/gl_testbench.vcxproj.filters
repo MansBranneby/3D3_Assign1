@@ -111,6 +111,9 @@
     <ClCompile Include="RenderStateDX.cpp">
       <Filter>Source Files\DirectX</Filter>
     </ClCompile>
+    <ClCompile Include="VertexBufferDX.cpp">
+      <Filter>Source Files\DirectX</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Renderer.h">
@@ -201,6 +204,9 @@
       <Filter>Source Files\DirectX\Header Files</Filter>
     </ClInclude>
     <ClInclude Include="RenderStateDX.h">
+      <Filter>Source Files\DirectX\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="VertexBufferDX.h">
       <Filter>Source Files\DirectX\Header Files</Filter>
     </ClInclude>
   </ItemGroup>

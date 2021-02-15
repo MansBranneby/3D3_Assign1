@@ -4,5 +4,7 @@
 class MeshDX :
     public Mesh
 {
+public:
+    MeshDX();
 };
 

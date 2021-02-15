@@ -4,6 +4,7 @@
 #include "MaterialDX.h"
 #include "MeshDX.h"
 #include "RenderStateDX.h"
+#include "VertexBufferDX.h"
 
 #include <SDL.h>
 #include "SDL_syswm.h"
@@ -14,6 +15,12 @@
 
 #pragma comment(lib,"SDL2.lib")
 #pragma comment(lib,"SDL2main.lib")
+
+struct vbStruct
+{
+	float x, y, z;
+	float u, v;
+};
 
 class RendererDX : public Renderer
 {
@@ -73,10 +80,13 @@ private:
 	ID3D12Resource1* _renderTargets[2] = {}; // Backbuffer
 	ID3D12Resource1* _constantBuffers[2] = {};
 	ID3D12Resource1* _SRVResource = nullptr;
-
-	ID3D12PipelineState* gPipeLineState = nullptr;
+	ID3D12Resource1* _VBResource = nullptr;
+	
+	D3D12_VERTEX_BUFFER_VIEW _VBView;
 
 	float _clearColour[4] = {0.0f, 0.0f, 0.0f, 0.0f};
+	
+	std::unordered_map<Technique*, std::vector<Mesh*>> _drawList;
 
 	void createDevice();
 	void createCommandQueue();
@@ -87,4 +97,5 @@ private:
 	void createDescriptorHeap();
 	void createConstantBuffers();
 	void createSRV();
+	void createVertexBuffer();
 };

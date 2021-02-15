@@ -94,7 +94,6 @@ void MaterialDX::addConstantBuffer(std::string name, unsigned int location)
 
 void MaterialDX::updateConstantBuffer(const void* data, size_t size, unsigned int location)
 {
-	_constantBuffers[location]->setData(data, size, this, location);
 	Color* c = (Color*)data;
 	setDiffuse(*c);
 }

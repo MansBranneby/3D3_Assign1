@@ -15,17 +15,17 @@ Material* RendererDX::makeMaterial(const std::string& name)
 
 Mesh* RendererDX::makeMesh()
 {
-	return nullptr;
+	return new MeshDX();
 }
 
 VertexBuffer* RendererDX::makeVertexBuffer(size_t size, VertexBuffer::DATA_USAGE usage)
 {
-	return nullptr;
+	return new VertexBufferDX;
 }
 
 ConstantBuffer* RendererDX::makeConstantBuffer(std::string NAME, unsigned int location)
 {
-	return nullptr;
+	return new ConstantBufferDX(NAME, location);
 }
 
 RenderState* RendererDX::makeRenderState()
@@ -84,7 +84,7 @@ Technique* RendererDX::makeTechnique(Material* m, RenderState* r)
 	if (FAILED(hr))
 		MessageBox(NULL, L"Error", L"Error: PipeLineState", MB_OK | MB_ICONERROR);
 
-	return nullptr;
+	return new Technique(m, r);
 }
 
 Texture2D* RendererDX::makeTexture2D()
@@ -132,6 +132,7 @@ int RendererDX::initialize(unsigned int width, unsigned int height)
 	createViewPort(width, height);
 	createConstantBuffers();
 	createSRV();
+	createVertexBuffer();
 
 	return 0;
 }
@@ -164,10 +165,93 @@ void RendererDX::setRenderState(RenderState* ps)
 
 void RendererDX::submit(Mesh* mesh)
 {
+	_drawList[mesh->technique].push_back(mesh);
 }
 
 void RendererDX::frame()
 {
+	int backBufferIndex = _swapChain->GetCurrentBackBufferIndex();
+
+	// TODO: CRASH
+	Mesh* mesh = _drawList[0].at(0);
+
+	//Command list allocators can only be reset when the associated command lists have
+	//finished execution on the GPU; fences are used to ensure this (See WaitForGpu method)
+	_commandAllocator->Reset();
+	_commandList->Reset(_commandAllocator, static_cast<RenderStateDX*>(mesh->technique->getRenderState())->getPipeLineState());
+
+	//Set constant buffer descriptor heap
+	ID3D12DescriptorHeap* descriptorHeaps[] = { _descriptorHeap[backBufferIndex] };
+	_commandList->SetDescriptorHeaps(ARRAYSIZE(descriptorHeaps), descriptorHeaps);
+
+	//Set root signature
+	_commandList->SetGraphicsRootSignature(_rootSignature);
+
+	//Set root descriptor table to index 0 in previously set root signature
+	_commandList->SetGraphicsRootDescriptorTable(0,
+		_descriptorHeap[backBufferIndex]->GetGPUDescriptorHandleForHeapStart());
+
+	//Set necessary states.
+	_commandList->RSSetViewports(1, &_viewPort);
+	_commandList->RSSetScissorRects(1, &_scissorRect);
+
+	//Indicate that the back buffer will be used as render target.
+	D3D12_RESOURCE_BARRIER barrierDesc = {};
+	barrierDesc.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+	barrierDesc.Transition.pResource = _renderTargets[backBufferIndex];
+	barrierDesc.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+	barrierDesc.Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
+	barrierDesc.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
+	_commandList->ResourceBarrier(1, &barrierDesc);
+
+	//Record commands.
+	//Get the handle for the current render target used as back buffer.
+	D3D12_CPU_DESCRIPTOR_HANDLE cdh = _descriptorHeapBackBuffer->GetCPUDescriptorHandleForHeapStart();
+	cdh.ptr += _rtvDescriptorSize * backBufferIndex;
+
+	_commandList->OMSetRenderTargets(1, &cdh, true, nullptr);
+
+	float clearColor[] = { 0.2f, 0.2f, 0.2f, 1.0f };
+	_commandList->ClearRenderTargetView(cdh, clearColor, 0, nullptr);
+
+	_commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	_commandList->IASetVertexBuffers(0, 1, &_VBView);
+
+	_commandList->DrawInstanced(3, 1, 0, 0);
+
+
+
+	//Indicate that the back buffer will now be used to present.
+	barrierDesc.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
+	barrierDesc.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
+
+	_commandList->ResourceBarrier(1, &barrierDesc);
+	//Close the list to prepare it for execution.
+	_commandList->Close();
+
+	//Execute the command list.
+	ID3D12CommandList* listsToExecute[] = { _commandList };
+	_commandQueue->ExecuteCommandLists(ARRAYSIZE(listsToExecute), listsToExecute);
+
+	//Present the frame.
+	DXGI_PRESENT_PARAMETERS pp = {};
+	_swapChain->Present1(0, 0, &pp);
+
+	//WAITING FOR EACH FRAME TO COMPLETE BEFORE CONTINUING IS NOT BEST PRACTICE.
+	//This is code implemented as such for simplicity. The cpu could for example be used
+	//for other tasks to prepare the next frame while the current one is being rendered.
+
+	//Signal and increment the fence value.
+	const UINT64 fence = _fenceValue;
+	_commandQueue->Signal(_fence, fence);
+	_fenceValue++;
+
+	//Wait until command queue is done.
+	if (_fence->GetCompletedValue() < fence)
+	{
+		_fence->SetEventOnCompletion(fence, _eventHandle);
+		WaitForSingleObject(_eventHandle, INFINITE);
+	}
 }
 
 void RendererDX::present()
@@ -474,4 +558,60 @@ void RendererDX::createConstantBuffers()
 
 void RendererDX::createSRV()
 {
+}
+
+void RendererDX::createVertexBuffer()
+{
+	vbStruct triangleVertices[3] =
+	{
+		0.0f, 0.05, 0.0f,   // pos1
+		0.5f, -0.99f,	    // uv1
+
+		0.05, -0.05, 0.0f,  // pos2
+		1.49f, 1.1f			// uv2
+
+		- 0.05, -0.05, 0.0f,// pos3
+		-0.51, 1.1f			// uv3
+	};
+
+	D3D12_HEAP_PROPERTIES hp = {};
+	hp.Type = D3D12_HEAP_TYPE_UPLOAD;
+	hp.CreationNodeMask = 1;
+	hp.VisibleNodeMask = 1;
+
+	D3D12_RESOURCE_DESC rd = {};
+	rd.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+	rd.Width = sizeof(triangleVertices);
+	rd.Height = 1;
+	rd.DepthOrArraySize = 1;
+	rd.MipLevels = 1;
+	rd.SampleDesc.Count = 1;
+	rd.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+
+	//Creates both a resource and an implicit heap, such that the heap is big enough
+	//to contain the entire resource and the resource is mapped to the heap. 
+	HRESULT hr = _device->CreateCommittedResource(
+		&hp,
+		D3D12_HEAP_FLAG_NONE,
+		&rd,
+		D3D12_RESOURCE_STATE_GENERIC_READ,
+		nullptr,
+		IID_PPV_ARGS(&_VBResource));
+	if (FAILED(hr))
+		MessageBox(NULL, L"Error", L"Error: _VBResource", MB_OK | MB_ICONERROR);
+
+	_VBResource->SetName(L"vb heap");
+
+	//Copy the triangle data to the vertex buffer.
+	void* dataBegin = nullptr;
+	D3D12_RANGE range = { 0, 0 }; //We do not intend to read this resource on the CPU.
+	_VBResource->Map(0, &range, &dataBegin);
+	memcpy(dataBegin, triangleVertices, sizeof(triangleVertices));
+	_VBResource->Unmap(0, nullptr);
+
+	//Initialize vertex buffer view, used in the render call.
+	_VBView.BufferLocation = _VBResource->GetGPUVirtualAddress();
+	_VBView.StrideInBytes = sizeof(vbStruct);
+	_VBView.SizeInBytes = sizeof(triangleVertices);
+
 }

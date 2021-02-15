@@ -256,8 +256,8 @@ int initialiseTestbench()
 		m->txBuffer = renderer->makeConstantBuffer(std::string(TRANSLATION_NAME), TRANSLATION);
 		
 		m->technique = techniques[ i % 4];
-		if (i % 4 == 2)
-			m->addTexture(textures[0], DIFFUSE_SLOT);
+	/*	if (i % 4 == 2)
+			m->addTexture(textures[0], DIFFUSE_SLOT);*/
 
 		scene.push_back(m);
 	}
@@ -302,7 +302,7 @@ int main(int argc, char *argv[])
 {
 	renderer = Renderer::makeRenderer(Renderer::BACKEND::DX12);
 	renderer->initialize(800,600);
-	renderer->setWinTitle("OpenGL");
+	renderer->setWinTitle("DX12");
 	renderer->setClearColor(0.0, 0.1, 0.1, 1.0);
 	initialiseTestbench();
 	run();
