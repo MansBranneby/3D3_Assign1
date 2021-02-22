@@ -35,54 +35,9 @@ RenderState* RendererDX::makeRenderState()
 
 Technique* RendererDX::makeTechnique(Material* m, RenderState* r)
 {
-	////// Input Layout //////
-	D3D12_INPUT_ELEMENT_DESC inputElementDesc[] = {
-		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0,	D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-		{ "COLOR"	, 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
-	};
-
-	D3D12_INPUT_LAYOUT_DESC inputLayoutDesc;
-	inputLayoutDesc.pInputElementDescs = inputElementDesc;
-	inputLayoutDesc.NumElements = ARRAYSIZE(inputElementDesc);
-
 	MaterialDX* mDX = static_cast<MaterialDX*>(m);
 	RenderStateDX* rDX = static_cast<RenderStateDX*>(r);
-	ID3D12PipelineState* pState = rDX->getPipeLineState();
-
-	D3D12_GRAPHICS_PIPELINE_STATE_DESC gpsd = {};
-
-	//Specify pipeline stages:
-	gpsd.pRootSignature = _rootSignature;
-	gpsd.InputLayout = inputLayoutDesc;
-	gpsd.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-	gpsd.VS.pShaderBytecode = reinterpret_cast<void*>(mDX->getShaderBlob(Material::ShaderType::VS)->GetBufferPointer());
-	gpsd.VS.BytecodeLength = mDX->getShaderBlob(Material::ShaderType::VS)->GetBufferSize();
-	gpsd.PS.pShaderBytecode = reinterpret_cast<void*>(mDX->getShaderBlob(Material::ShaderType::PS)->GetBufferPointer());
-	gpsd.PS.BytecodeLength = mDX->getShaderBlob(Material::ShaderType::PS)->GetBufferSize();
-
-	//Specify render target and depthstencil usage.
-	gpsd.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
-	gpsd.NumRenderTargets = 1;
-
-	gpsd.SampleDesc.Count = 1;
-	gpsd.SampleMask = UINT_MAX;
-
-	//Specify rasterizer behaviour.
-	gpsd.RasterizerState.FillMode = rDX->isWireframe() ? D3D12_FILL_MODE_WIREFRAME : D3D12_FILL_MODE_SOLID;
-	gpsd.RasterizerState.CullMode = D3D12_CULL_MODE_BACK;
-
-	//Specify blend descriptions.
-	D3D12_RENDER_TARGET_BLEND_DESC defaultRTdesc = {
-		false, false,
-		D3D12_BLEND_ONE, D3D12_BLEND_ZERO, D3D12_BLEND_OP_ADD,
-		D3D12_BLEND_ONE, D3D12_BLEND_ZERO, D3D12_BLEND_OP_ADD,
-		D3D12_LOGIC_OP_NOOP, D3D12_COLOR_WRITE_ENABLE_ALL };
-	for (UINT i = 0; i < D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT; i++)
-		gpsd.BlendState.RenderTarget[i] = defaultRTdesc;
-
-	HRESULT hr = _device->CreateGraphicsPipelineState(&gpsd, IID_PPV_ARGS(&pState));
-	if (FAILED(hr))
-		MessageBox(NULL, L"Error", L"Error: PipeLineState", MB_OK | MB_ICONERROR);
+	rDX->createPipelineState(_device, _rootSignature, mDX);
 
 	return new Technique(m, r);
 }
@@ -165,15 +120,25 @@ void RendererDX::setRenderState(RenderState* ps)
 
 void RendererDX::submit(Mesh* mesh)
 {
-	_drawList[mesh->technique].push_back(mesh);
-}
+	//_drawList[mesh->technique].push_back(mesh);
 
-void RendererDX::frame()
-{
 	int backBufferIndex = _swapChain->GetCurrentBackBufferIndex();
 
+	CBStruct cbData = static_cast<ConstantBufferDX*>(mesh->txBuffer)->getCBData();
+	//Update GPU memory
+	void* mappedMem = nullptr;
+	D3D12_RANGE readRange = { 0, 0 }; //We do not intend to read this resource on the CPU.
+	if (SUCCEEDED(_constantBuffers[backBufferIndex]->Map(0, &readRange, &mappedMem)))
+	{
+		memcpy(mappedMem, &cbData, sizeof(CBStruct));
+
+		D3D12_RANGE writeRange = { 0, sizeof(CBStruct) };
+		_constantBuffers[backBufferIndex]->Unmap(0, &writeRange);
+	}
+
+
 	// TODO: CRASH
-	Mesh* mesh = _drawList[0].at(0);
+	//Mesh* mesh = _drawList[0].at(0);
 
 	//Command list allocators can only be reset when the associated command lists have
 	//finished execution on the GPU; fences are used to ensure this (See WaitForGpu method)
@@ -254,6 +219,92 @@ void RendererDX::frame()
 	}
 }
 
+void RendererDX::frame()
+{
+	//int backBufferIndex = _swapChain->GetCurrentBackBufferIndex();
+
+	//// TODO: CRASH
+	//Mesh* mesh = _drawList[0].at(0);
+
+	////Command list allocators can only be reset when the associated command lists have
+	////finished execution on the GPU; fences are used to ensure this (See WaitForGpu method)
+	//_commandAllocator->Reset();
+	//_commandList->Reset(_commandAllocator, static_cast<RenderStateDX*>(mesh->technique->getRenderState())->getPipeLineState());
+
+	////Set constant buffer descriptor heap
+	//ID3D12DescriptorHeap* descriptorHeaps[] = { _descriptorHeap[backBufferIndex] };
+	//_commandList->SetDescriptorHeaps(ARRAYSIZE(descriptorHeaps), descriptorHeaps);
+
+	////Set root signature
+	//_commandList->SetGraphicsRootSignature(_rootSignature);
+
+	////Set root descriptor table to index 0 in previously set root signature
+	//_commandList->SetGraphicsRootDescriptorTable(0,
+	//	_descriptorHeap[backBufferIndex]->GetGPUDescriptorHandleForHeapStart());
+
+	////Set necessary states.
+	//_commandList->RSSetViewports(1, &_viewPort);
+	//_commandList->RSSetScissorRects(1, &_scissorRect);
+
+	////Indicate that the back buffer will be used as render target.
+	//D3D12_RESOURCE_BARRIER barrierDesc = {};
+	//barrierDesc.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+	//barrierDesc.Transition.pResource = _renderTargets[backBufferIndex];
+	//barrierDesc.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+	//barrierDesc.Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
+	//barrierDesc.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
+	//_commandList->ResourceBarrier(1, &barrierDesc);
+
+	////Record commands.
+	////Get the handle for the current render target used as back buffer.
+	//D3D12_CPU_DESCRIPTOR_HANDLE cdh = _descriptorHeapBackBuffer->GetCPUDescriptorHandleForHeapStart();
+	//cdh.ptr += _rtvDescriptorSize * backBufferIndex;
+
+	//_commandList->OMSetRenderTargets(1, &cdh, true, nullptr);
+
+	//float clearColor[] = { 0.2f, 0.2f, 0.2f, 1.0f };
+	//_commandList->ClearRenderTargetView(cdh, clearColor, 0, nullptr);
+
+	//_commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	//_commandList->IASetVertexBuffers(0, 1, &_VBView);
+
+	//_commandList->DrawInstanced(3, 1, 0, 0);
+
+
+
+	////Indicate that the back buffer will now be used to present.
+	//barrierDesc.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
+	//barrierDesc.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
+
+	//_commandList->ResourceBarrier(1, &barrierDesc);
+	////Close the list to prepare it for execution.
+	//_commandList->Close();
+
+	////Execute the command list.
+	//ID3D12CommandList* listsToExecute[] = { _commandList };
+	//_commandQueue->ExecuteCommandLists(ARRAYSIZE(listsToExecute), listsToExecute);
+
+	////Present the frame.
+	//DXGI_PRESENT_PARAMETERS pp = {};
+	//_swapChain->Present1(0, 0, &pp);
+
+	////WAITING FOR EACH FRAME TO COMPLETE BEFORE CONTINUING IS NOT BEST PRACTICE.
+	////This is code implemented as such for simplicity. The cpu could for example be used
+	////for other tasks to prepare the next frame while the current one is being rendered.
+
+	////Signal and increment the fence value.
+	//const UINT64 fence = _fenceValue;
+	//_commandQueue->Signal(_fence, fence);
+	//_fenceValue++;
+
+	////Wait until command queue is done.
+	//if (_fence->GetCompletedValue() < fence)
+	//{
+	//	_fence->SetEventOnCompletion(fence, _eventHandle);
+	//	WaitForSingleObject(_eventHandle, INFINITE);
+	//}
+}
+
 void RendererDX::present()
 {
 }
@@ -262,7 +313,7 @@ void RendererDX::createDevice()
 {
 #ifdef _DEBUG
 	//Enable the D3D12 debug layer.
-	ID3D12Debug* debugController = nullptr;
+	ID3D12Debug3* debugController = nullptr;
 
 #ifdef STATIC_LINK_DEBUGSTUFF
 	if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController))))
@@ -276,6 +327,7 @@ void RendererDX::createDevice()
 	if (SUCCEEDED(f(IID_PPV_ARGS(&debugController))))
 	{
 		debugController->EnableDebugLayer();
+		debugController->SetEnableGPUBasedValidation(true);
 	}
 	SafeRelease(&debugController);
 #endif

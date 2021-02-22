@@ -8,7 +8,7 @@
 struct CBStruct
 {
 	float color[4];
-	float translate[4];
+	float translate[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
 	float rotate[3] = { 0.0f, 0.0f, 0.0f };
 };
 
@@ -24,6 +24,8 @@ public:
 	// update the GPU memory.
 	void setData(const void* data, size_t size, Material* m, unsigned int location);
 	void bind(Material*);
+
+	CBStruct getCBData();
 
 private:
 	std::string _name;

@@ -64,12 +64,13 @@ public:
 	virtual void disable();
 
 	ID3DBlob* getShaderBlob(ShaderType type);
+	ConstantBufferDX* getConstantBuffer();
 
 private:
 	std::map<ShaderType, std::pair<std::string, std::string>> _shadercompileStrings;
 	ID3DBlob* _shaderBlob[4] = {nullptr, nullptr, nullptr, nullptr};
 
-	std::map<unsigned int, ConstantBufferDX*> _constantBuffers;
+	ConstantBufferDX* _constantBuffer;
 
 	std::vector<std::string> createShaderMacros(ShaderType type);
 };
