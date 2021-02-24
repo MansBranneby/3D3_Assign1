@@ -78,7 +78,7 @@ private:
 	D3D12_RECT _scissorRect = {};
 
 	ID3D12Resource1* _renderTargets[2] = {}; // Backbuffer
-	ID3D12Resource1* _constantBuffers[2] = {};
+//	ID3D12Resource1* _constantBuffers[2] = {};
 	ID3D12Resource1* _SRVResource = nullptr;
 	ID3D12Resource1* _VBResource = nullptr;
 	
@@ -86,7 +86,8 @@ private:
 
 	float _clearColour[4] = {0.0f, 0.0f, 0.0f, 0.0f};
 	
-	std::unordered_map<Technique*, std::vector<Mesh*>> _drawList;
+	std::vector<Mesh*> _drawList;
+	int _nrOfMeshes = 0;
 
 	void createDevice();
 	void createCommandQueue();

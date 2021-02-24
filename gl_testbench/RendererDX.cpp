@@ -15,7 +15,7 @@ Material* RendererDX::makeMaterial(const std::string& name)
 
 Mesh* RendererDX::makeMesh()
 {
-	return new MeshDX();
+	return new MeshDX(_device, _descriptorHeap, _nrOfMeshes++);
 }
 
 VertexBuffer* RendererDX::makeVertexBuffer(size_t size, VertexBuffer::DATA_USAGE usage)
@@ -120,30 +120,26 @@ void RendererDX::setRenderState(RenderState* ps)
 
 void RendererDX::submit(Mesh* mesh)
 {
-	//_drawList[mesh->technique].push_back(mesh);
+	if(_drawList.size() < 100)
+		_drawList.push_back(mesh);
 
 	int backBufferIndex = _swapChain->GetCurrentBackBufferIndex();
+	static_cast<MeshDX*>(mesh)->mapCBData(backBufferIndex);
+}
 
-	CBStruct cbData = static_cast<ConstantBufferDX*>(mesh->txBuffer)->getCBData();
-	//Update GPU memory
-	void* mappedMem = nullptr;
-	D3D12_RANGE readRange = { 0, 0 }; //We do not intend to read this resource on the CPU.
-	if (SUCCEEDED(_constantBuffers[backBufferIndex]->Map(0, &readRange, &mappedMem)))
-	{
-		memcpy(mappedMem, &cbData, sizeof(CBStruct));
-
-		D3D12_RANGE writeRange = { 0, sizeof(CBStruct) };
-		_constantBuffers[backBufferIndex]->Unmap(0, &writeRange);
-	}
-
-
-	// TODO: CRASH
-	//Mesh* mesh = _drawList[0].at(0);
+void RendererDX::frame()
+{
+	int backBufferIndex = _swapChain->GetCurrentBackBufferIndex();
+	D3D12_RESOURCE_BARRIER barrierDesc = {};
+	D3D12_CPU_DESCRIPTOR_HANDLE cdh = _descriptorHeapBackBuffer->GetCPUDescriptorHandleForHeapStart();
+	// DescriptorTable size
+	UINT descriptorTableSize = _device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV) * 2;
+	D3D12_GPU_DESCRIPTOR_HANDLE heapHandle = _descriptorHeap[backBufferIndex]->GetGPUDescriptorHandleForHeapStart();
 
 	//Command list allocators can only be reset when the associated command lists have
 	//finished execution on the GPU; fences are used to ensure this (See WaitForGpu method)
 	_commandAllocator->Reset();
-	_commandList->Reset(_commandAllocator, static_cast<RenderStateDX*>(mesh->technique->getRenderState())->getPipeLineState());
+	_commandList->Reset(_commandAllocator, static_cast<RenderStateDX*>(_drawList[1]->technique->getRenderState())->getPipeLineState());
 
 	//Set constant buffer descriptor heap
 	ID3D12DescriptorHeap* descriptorHeaps[] = { _descriptorHeap[backBufferIndex] };
@@ -152,16 +148,11 @@ void RendererDX::submit(Mesh* mesh)
 	//Set root signature
 	_commandList->SetGraphicsRootSignature(_rootSignature);
 
-	//Set root descriptor table to index 0 in previously set root signature
-	_commandList->SetGraphicsRootDescriptorTable(0,
-		_descriptorHeap[backBufferIndex]->GetGPUDescriptorHandleForHeapStart());
-
 	//Set necessary states.
 	_commandList->RSSetViewports(1, &_viewPort);
 	_commandList->RSSetScissorRects(1, &_scissorRect);
 
 	//Indicate that the back buffer will be used as render target.
-	D3D12_RESOURCE_BARRIER barrierDesc = {};
 	barrierDesc.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
 	barrierDesc.Transition.pResource = _renderTargets[backBufferIndex];
 	barrierDesc.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
@@ -171,7 +162,6 @@ void RendererDX::submit(Mesh* mesh)
 
 	//Record commands.
 	//Get the handle for the current render target used as back buffer.
-	D3D12_CPU_DESCRIPTOR_HANDLE cdh = _descriptorHeapBackBuffer->GetCPUDescriptorHandleForHeapStart();
 	cdh.ptr += _rtvDescriptorSize * backBufferIndex;
 
 	_commandList->OMSetRenderTargets(1, &cdh, true, nullptr);
@@ -182,7 +172,14 @@ void RendererDX::submit(Mesh* mesh)
 	_commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	_commandList->IASetVertexBuffers(0, 1, &_VBView);
 
-	_commandList->DrawInstanced(3, 1, 0, 0);
+	for (UINT i = 0; i < 100; i++)
+	{
+		//Set root descriptor table to index 0 in previously set root signature
+		_commandList->SetPipelineState(static_cast<RenderStateDX*>(_drawList[i]->technique->getRenderState())->getPipeLineState());
+		_commandList->SetGraphicsRootDescriptorTable(0, heapHandle);
+		_commandList->DrawInstanced(3, 1, 0, 0);
+		heapHandle.ptr += UINT64(descriptorTableSize);
+	}
 
 
 
@@ -217,92 +214,6 @@ void RendererDX::submit(Mesh* mesh)
 		_fence->SetEventOnCompletion(fence, _eventHandle);
 		WaitForSingleObject(_eventHandle, INFINITE);
 	}
-}
-
-void RendererDX::frame()
-{
-	//int backBufferIndex = _swapChain->GetCurrentBackBufferIndex();
-
-	//// TODO: CRASH
-	//Mesh* mesh = _drawList[0].at(0);
-
-	////Command list allocators can only be reset when the associated command lists have
-	////finished execution on the GPU; fences are used to ensure this (See WaitForGpu method)
-	//_commandAllocator->Reset();
-	//_commandList->Reset(_commandAllocator, static_cast<RenderStateDX*>(mesh->technique->getRenderState())->getPipeLineState());
-
-	////Set constant buffer descriptor heap
-	//ID3D12DescriptorHeap* descriptorHeaps[] = { _descriptorHeap[backBufferIndex] };
-	//_commandList->SetDescriptorHeaps(ARRAYSIZE(descriptorHeaps), descriptorHeaps);
-
-	////Set root signature
-	//_commandList->SetGraphicsRootSignature(_rootSignature);
-
-	////Set root descriptor table to index 0 in previously set root signature
-	//_commandList->SetGraphicsRootDescriptorTable(0,
-	//	_descriptorHeap[backBufferIndex]->GetGPUDescriptorHandleForHeapStart());
-
-	////Set necessary states.
-	//_commandList->RSSetViewports(1, &_viewPort);
-	//_commandList->RSSetScissorRects(1, &_scissorRect);
-
-	////Indicate that the back buffer will be used as render target.
-	//D3D12_RESOURCE_BARRIER barrierDesc = {};
-	//barrierDesc.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-	//barrierDesc.Transition.pResource = _renderTargets[backBufferIndex];
-	//barrierDesc.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-	//barrierDesc.Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
-	//barrierDesc.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
-	//_commandList->ResourceBarrier(1, &barrierDesc);
-
-	////Record commands.
-	////Get the handle for the current render target used as back buffer.
-	//D3D12_CPU_DESCRIPTOR_HANDLE cdh = _descriptorHeapBackBuffer->GetCPUDescriptorHandleForHeapStart();
-	//cdh.ptr += _rtvDescriptorSize * backBufferIndex;
-
-	//_commandList->OMSetRenderTargets(1, &cdh, true, nullptr);
-
-	//float clearColor[] = { 0.2f, 0.2f, 0.2f, 1.0f };
-	//_commandList->ClearRenderTargetView(cdh, clearColor, 0, nullptr);
-
-	//_commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	//_commandList->IASetVertexBuffers(0, 1, &_VBView);
-
-	//_commandList->DrawInstanced(3, 1, 0, 0);
-
-
-
-	////Indicate that the back buffer will now be used to present.
-	//barrierDesc.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
-	//barrierDesc.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
-
-	//_commandList->ResourceBarrier(1, &barrierDesc);
-	////Close the list to prepare it for execution.
-	//_commandList->Close();
-
-	////Execute the command list.
-	//ID3D12CommandList* listsToExecute[] = { _commandList };
-	//_commandQueue->ExecuteCommandLists(ARRAYSIZE(listsToExecute), listsToExecute);
-
-	////Present the frame.
-	//DXGI_PRESENT_PARAMETERS pp = {};
-	//_swapChain->Present1(0, 0, &pp);
-
-	////WAITING FOR EACH FRAME TO COMPLETE BEFORE CONTINUING IS NOT BEST PRACTICE.
-	////This is code implemented as such for simplicity. The cpu could for example be used
-	////for other tasks to prepare the next frame while the current one is being rendered.
-
-	////Signal and increment the fence value.
-	//const UINT64 fence = _fenceValue;
-	//_commandQueue->Signal(_fence, fence);
-	//_fenceValue++;
-
-	////Wait until command queue is done.
-	//if (_fence->GetCompletedValue() < fence)
-	//{
-	//	_fence->SetEventOnCompletion(fence, _eventHandle);
-	//	WaitForSingleObject(_eventHandle, INFINITE);
-	//}
 }
 
 void RendererDX::present()
@@ -558,7 +469,7 @@ void RendererDX::createDescriptorHeap()
 	for (int i = 0; i < 2; i++)
 	{
 		D3D12_DESCRIPTOR_HEAP_DESC heapDescriptorDesc = {};
-		heapDescriptorDesc.NumDescriptors = 3;
+		heapDescriptorDesc.NumDescriptors = 200;
 		heapDescriptorDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 		heapDescriptorDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 		HRESULT hr = _device->CreateDescriptorHeap(&heapDescriptorDesc, IID_PPV_ARGS(&_descriptorHeap[i]));
@@ -569,43 +480,7 @@ void RendererDX::createDescriptorHeap()
 
 void RendererDX::createConstantBuffers()
 {
-	UINT cbSizeAligned = (sizeof(CBStruct) + 255) & ~255;	// 256-byte aligned CB.
-
-	D3D12_HEAP_PROPERTIES heapProperties = {};
-	heapProperties.Type = D3D12_HEAP_TYPE_UPLOAD;
-	heapProperties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
-	heapProperties.CreationNodeMask = 1; //used when multi-gpu
-	heapProperties.VisibleNodeMask = 1; //used when multi-gpu
-	heapProperties.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
-
-	D3D12_RESOURCE_DESC resourceDesc = {};
-	resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-	resourceDesc.Width = cbSizeAligned;
-	resourceDesc.Height = 1;
-	resourceDesc.DepthOrArraySize = 1;
-	resourceDesc.MipLevels = 1;
-	resourceDesc.SampleDesc.Count = 1;
-	resourceDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-
-	//Create a resource heap, descriptor heap, and pointer to cbv for each frame
-	for (int i = 0; i < 2; i++)
-	{
-		_device->CreateCommittedResource(
-			&heapProperties,
-			D3D12_HEAP_FLAG_NONE,
-			&resourceDesc,
-			D3D12_RESOURCE_STATE_GENERIC_READ,
-			nullptr,
-			IID_PPV_ARGS(&_constantBuffers[i])
-		);
-
-		_constantBuffers[i]->SetName(L"cb heap");
-
-		D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = {};
-		cbvDesc.BufferLocation = _constantBuffers[i]->GetGPUVirtualAddress();
-		cbvDesc.SizeInBytes = cbSizeAligned;
-		_device->CreateConstantBufferView(&cbvDesc, _descriptorHeap[i]->GetCPUDescriptorHandleForHeapStart()); // Constantbuffers first in heap
-	}
+	// TODO: Remove function
 }
 
 void RendererDX::createSRV()
