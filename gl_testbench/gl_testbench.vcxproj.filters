@@ -217,6 +217,7 @@
     <None Include="..\assets\GL45\VertexShader.glsl">
       <Filter>Resource Files</Filter>
     </None>
+    <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="..\assets\DX12\VertexShader.hlsl">

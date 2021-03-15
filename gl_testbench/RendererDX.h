@@ -6,6 +6,7 @@
 #include "RenderStateDX.h"
 #include "VertexBufferDX.h"
 
+#include <WICTextureLoader.h>
 #include <SDL.h>
 #include "SDL_syswm.h"
 
