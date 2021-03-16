@@ -5,8 +5,12 @@
 #include "MeshDX.h"
 #include "RenderStateDX.h"
 #include "VertexBufferDX.h"
+#include "Texture2DDX.h"
+#include "Sampler2DDX.h"
 
-#include <WICTextureLoader.h>
+#include "stb_image.h"
+#include "d3dx12.h"
+
 #include <SDL.h>
 #include "SDL_syswm.h"
 

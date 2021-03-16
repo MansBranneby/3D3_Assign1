@@ -165,7 +165,9 @@
     <ClCompile Include="RendererDX.cpp" />
     <ClCompile Include="RenderStateDX.cpp" />
     <ClCompile Include="Sampler2D.cpp" />
+    <ClCompile Include="Sampler2DDX.cpp" />
     <ClCompile Include="Scene.cpp" />
+    <ClCompile Include="Texture2DDX.cpp" />
     <ClCompile Include="TransformDX.cpp" />
     <ClCompile Include="VertexBuffer.cpp" />
     <ClCompile Include="Camera.cpp" />
@@ -183,6 +185,7 @@
     <ClInclude Include="..\include\stb_image.h" />
     <ClInclude Include="ConstantBuffer.h" />
     <ClInclude Include="ConstantBufferDX.h" />
+    <ClInclude Include="d3dx12.h" />
     <ClInclude Include="MaterialDX.h" />
     <ClInclude Include="MeshDX.h" />
     <ClInclude Include="OpenGL\ConstantBufferGL.h" />
@@ -198,7 +201,9 @@
     <ClInclude Include="RendererDX.h" />
     <ClInclude Include="RenderStateDX.h" />
     <ClInclude Include="Sampler2D.h" />
+    <ClInclude Include="Sampler2DDX.h" />
     <ClInclude Include="Scene.h" />
+    <ClInclude Include="Texture2DDX.h" />
     <ClInclude Include="TransformDX.h" />
     <ClInclude Include="VertexBuffer.h" />
     <ClInclude Include="Camera.h" />
@@ -232,11 +237,13 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
     <Import Project="..\packages\directxtk12_uwp.2021.1.10.1\build\native\directxtk12_uwp.targets" Condition="Exists('..\packages\directxtk12_uwp.2021.1.10.1\build\native\directxtk12_uwp.targets')" />
+    <Import Project="..\packages\directxtk12_desktop_2017.2021.1.10.1\build\native\directxtk12_desktop_2017.targets" Condition="Exists('..\packages\directxtk12_desktop_2017.2021.1.10.1\build\native\directxtk12_desktop_2017.targets')" />
   </ImportGroup>
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
     </PropertyGroup>
     <Error Condition="!Exists('..\packages\directxtk12_uwp.2021.1.10.1\build\native\directxtk12_uwp.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\directxtk12_uwp.2021.1.10.1\build\native\directxtk12_uwp.targets'))" />
+    <Error Condition="!Exists('..\packages\directxtk12_desktop_2017.2021.1.10.1\build\native\directxtk12_desktop_2017.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\directxtk12_desktop_2017.2021.1.10.1\build\native\directxtk12_desktop_2017.targets'))" />
   </Target>
 </Project>

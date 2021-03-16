@@ -114,6 +114,12 @@
     <ClCompile Include="VertexBufferDX.cpp">
       <Filter>Source Files\DirectX</Filter>
     </ClCompile>
+    <ClCompile Include="Texture2DDX.cpp">
+      <Filter>Source Files\DirectX</Filter>
+    </ClCompile>
+    <ClCompile Include="Sampler2DDX.cpp">
+      <Filter>Source Files\DirectX</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Renderer.h">
@@ -207,6 +213,15 @@
       <Filter>Source Files\DirectX\Header Files</Filter>
     </ClInclude>
     <ClInclude Include="VertexBufferDX.h">
+      <Filter>Source Files\DirectX\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="d3dx12.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Texture2DDX.h">
+      <Filter>Source Files\DirectX\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Sampler2DDX.h">
       <Filter>Source Files\DirectX\Header Files</Filter>
     </ClInclude>
   </ItemGroup>

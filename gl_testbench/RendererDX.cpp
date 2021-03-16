@@ -44,12 +44,12 @@ Technique* RendererDX::makeTechnique(Material* m, RenderState* r)
 
 Texture2D* RendererDX::makeTexture2D()
 {
-	return nullptr;
+	return new Texture2DDX();
 }
 
 Sampler2D* RendererDX::makeSampler2D()
 {
-	return nullptr;
+	return new Sampler2DDX();
 }
 
 std::string RendererDX::getShaderPath()
@@ -485,68 +485,68 @@ void RendererDX::createConstantBuffers()
 
 void RendererDX::createSRV()
 {
-	// Create the texture.
+	std::string filename = "../assets/textures/fatboy.png";
+	int w, h, bpp;
+	unsigned char* texture = stbi_load(filename.c_str(), &w, &h, &bpp, STBI_rgb_alpha);
+	// DescriptorTable size
+	int descriptorTableSize = _device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV) * 2;
+
+	Microsoft::WRL::ComPtr<ID3D12Resource> textureUploadHeap;
+	
+	D3D12_RESOURCE_DESC textureDesc = {};
+	textureDesc.MipLevels = 1;
+	textureDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	textureDesc.Width = w;
+	textureDesc.Height = h;
+	textureDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
+	textureDesc.DepthOrArraySize = 1;
+	textureDesc.SampleDesc.Count = 1;
+	textureDesc.SampleDesc.Quality = 0;
+	textureDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+	
+	HRESULT hr = _device->CreateCommittedResource(
+		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+		D3D12_HEAP_FLAG_NONE,
+		&textureDesc,
+		D3D12_RESOURCE_STATE_COPY_DEST,
+		nullptr,
+		IID_PPV_ARGS(&_SRVResource));
+	if (FAILED(hr))
+		MessageBox(NULL, L"Error", L"Error: _SRVResource", MB_OK | MB_ICONERROR);
+
+	const UINT64 uploadBufferSize = GetRequiredIntermediateSize(_SRVResource, 0, 1);
+
+	// Create the GPU upload buffer.
+	_device->CreateCommittedResource(
+		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+		D3D12_HEAP_FLAG_NONE,
+		&CD3DX12_RESOURCE_DESC::Buffer(uploadBufferSize),
+		D3D12_RESOURCE_STATE_GENERIC_READ,
+		nullptr,
+		IID_PPV_ARGS(&textureUploadHeap));
+
+	D3D12_SUBRESOURCE_DATA textureData = {};
+	textureData.pData = &texture[0];
+	textureData.RowPitch = w * 4;
+	textureData.SlicePitch = textureData.RowPitch * h;
+
+	UpdateSubresources(_commandList, _SRVResource, textureUploadHeap.Get(), 0, 0, 1, &textureData);
+	_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(_SRVResource, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE));
+
+	// Describe and create a SRV for the texture.
+	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	srvDesc.Format = textureDesc.Format;
+	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+	srvDesc.Texture2D.MipLevels = 1;
+
+	D3D12_CPU_DESCRIPTOR_HANDLE cdh = _descriptorHeap[0]->GetCPUDescriptorHandleForHeapStart();
+
+	for (int i = 0; i < 100; i++)
 	{
-		// Describe and create a Texture2D.
-		D3D12_RESOURCE_DESC textureDesc = {};
-		textureDesc.MipLevels = 1;
-		textureDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-		textureDesc.Width = 640;
-		textureDesc.Height = 640;
-		textureDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
-		textureDesc.DepthOrArraySize = 1;
-		textureDesc.SampleDesc.Count = 1;
-		textureDesc.SampleDesc.Quality = 0;
-		textureDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
-
-		D3D12_HEAP_PROPERTIES hp = {};
-		hp.Type = D3D12_HEAP_TYPE_DEFAULT;
-		hp.CreationNodeMask = 1;
-		hp.VisibleNodeMask = 1;
-
-		D3D12_HEAP_PROPERTIES hpu = {};
-		hpu.Type = D3D12_HEAP_TYPE_UPLOAD;
-		hpu.CreationNodeMask = 1;
-		hpu.VisibleNodeMask = 1;
-
-		_device->CreateCommittedResource(
-			&hp,
-			D3D12_HEAP_FLAG_NONE,
-			&textureDesc,
-			D3D12_RESOURCE_STATE_COPY_DEST,
-			nullptr,
-			IID_PPV_ARGS(&_SRVResource));
-
-		//const UINT64 uploadBufferSize = GetRequiredIntermediateSize(m_texture.Get(), 0, 1);
-
-		// Create the GPU upload buffer.
-		_device->CreateCommittedResource(
-			&hpu,
-			D3D12_HEAP_FLAG_NONE,
-			&CD3DX12_RESOURCE_DESC::Buffer(uploadBufferSize),
-			D3D12_RESOURCE_STATE_GENERIC_READ,
-			nullptr,
-			IID_PPV_ARGS(&textureUploadHeap)));
-
-		// Copy data to the intermediate upload heap and then schedule a copy 
-		// from the upload heap to the Texture2D.
-		std::vector<UINT8> texture = GenerateTextureData();
-
-		D3D12_SUBRESOURCE_DATA textureData = {};
-		textureData.pData = &texture[0];
-		textureData.RowPitch = TextureWidth * TexturePixelSize;
-		textureData.SlicePitch = textureData.RowPitch * TextureHeight;
-
-		UpdateSubresources(m_commandList.Get(), m_texture.Get(), textureUploadHeap.Get(), 0, 0, 1, &textureData);
-		m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_texture.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE));
-
-		// Describe and create a SRV for the texture.
-		D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
-		srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-		srvDesc.Format = textureDesc.Format;
-		srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-		srvDesc.Texture2D.MipLevels = 1;
-		m_device->CreateShaderResourceView(m_texture.Get(), &srvDesc, m_srvHeap->GetCPUDescriptorHandleForHeapStart());
+		_device->CreateShaderResourceView(_SRVResource, &srvDesc, cdh);
+		cdh.ptr += descriptorTableSize;
+	}
 }
 
 void RendererDX::createVertexBuffer()
