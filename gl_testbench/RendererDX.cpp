@@ -310,9 +310,9 @@ void RendererDX::createCommandQueue()
 	if (FAILED(hr))
 		MessageBox(NULL, L"Error", L"Error: _commandList", MB_OK | MB_ICONERROR);
 
-	//Command lists are created in the recording state. Since there is nothing to
-	//record right now and the main loop expects it to be closed, we close it.
-	_commandList->Close();
+	////Command lists are created in the recording state. Since there is nothing to
+	////record right now and the main loop expects it to be closed, we close it.
+	//_commandList->Close();
 
 	IDXGIFactory5* factory = nullptr;
 	hr = CreateDXGIFactory(IID_PPV_ARGS(&factory));
@@ -430,9 +430,9 @@ void RendererDX::createRootSignature()
 
 	D3D12_STATIC_SAMPLER_DESC sDesc;
 	sDesc.Filter = D3D12_FILTER_MIN_MAG_MIP_POINT;
-	sDesc.AddressU = D3D12_TEXTURE_ADDRESS_MODE_BORDER;
-	sDesc.AddressV = D3D12_TEXTURE_ADDRESS_MODE_BORDER;
-	sDesc.AddressW = D3D12_TEXTURE_ADDRESS_MODE_BORDER;
+	sDesc.AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+	sDesc.AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+	sDesc.AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
 	sDesc.MipLODBias = 0;
 	sDesc.MaxAnisotropy = 0;
 	sDesc.ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;
@@ -492,7 +492,7 @@ void RendererDX::createSRV()
 	int descriptorTableSize = _device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV) * 2;
 
 	Microsoft::WRL::ComPtr<ID3D12Resource> textureUploadHeap;
-	
+
 	D3D12_RESOURCE_DESC textureDesc = {};
 	textureDesc.MipLevels = 1;
 	textureDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
@@ -527,7 +527,7 @@ void RendererDX::createSRV()
 
 	D3D12_SUBRESOURCE_DATA textureData = {};
 	textureData.pData = &texture[0];
-	textureData.RowPitch = w * 4;
+	textureData.RowPitch = w*(int)4;
 	textureData.SlicePitch = textureData.RowPitch * h;
 
 	UpdateSubresources(_commandList, _SRVResource, textureUploadHeap.Get(), 0, 0, 1, &textureData);
@@ -540,12 +540,36 @@ void RendererDX::createSRV()
 	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
 	srvDesc.Texture2D.MipLevels = 1;
 
-	D3D12_CPU_DESCRIPTOR_HANDLE cdh = _descriptorHeap[0]->GetCPUDescriptorHandleForHeapStart();
-
-	for (int i = 0; i < 100; i++)
+	D3D12_CPU_DESCRIPTOR_HANDLE cdh;
+	for (int i = 0; i < 2; i++)
 	{
-		_device->CreateShaderResourceView(_SRVResource, &srvDesc, cdh);
-		cdh.ptr += descriptorTableSize;
+		cdh = _descriptorHeap[i]->GetCPUDescriptorHandleForHeapStart();
+		cdh.ptr += _device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+		for (int j = 0; j < 100; j++)
+		{
+			_device->CreateShaderResourceView(_SRVResource, &srvDesc, cdh);
+			cdh.ptr += descriptorTableSize;
+		}
+	}
+
+	//Command lists are created in the recording state. Since there is nothing to
+	//record right now and the main loop expects it to be closed, we close it.
+	_commandList->Close();
+
+	//Execute the command list.
+	ID3D12CommandList* listsToExecute[] = { _commandList };
+	_commandQueue->ExecuteCommandLists(ARRAYSIZE(listsToExecute), listsToExecute);
+
+	//Signal and increment the fence value.
+	const UINT64 fence = _fenceValue;
+	_commandQueue->Signal(_fence, fence);
+	_fenceValue++;
+
+	//Wait until command queue is done.
+	if (_fence->GetCompletedValue() < fence)
+	{
+		_fence->SetEventOnCompletion(fence, _eventHandle);
+		WaitForSingleObject(_eventHandle, INFINITE);
 	}
 }
 
@@ -557,7 +581,7 @@ void RendererDX::createVertexBuffer()
 		0.5f, -0.99f,	    // uv1
 
 		0.05, -0.05, 0.0f,  // pos2
-		1.49f, 1.1f			// uv2
+		1.49f, 1.1f,		// uv2
 
 		- 0.05, -0.05, 0.0f,// pos3
 		-0.51, 1.1f			// uv3

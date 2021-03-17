@@ -3,7 +3,7 @@
 #include "ConstantBuffer.h"
 
 #include <windows.h>
-#include <d3d12.h>
+//#include <d3d12.h>
 
 struct CBStruct
 {

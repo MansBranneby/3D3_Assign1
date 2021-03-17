@@ -5,7 +5,14 @@ struct PS_IN
 	float2 uv : TEXTCOORD;
 };
 
+Texture2D tex : register(t0);
+
+SamplerState texSampler : register(s0);
+
+
+
 float4 PS_main(PS_IN input) : SV_TARGET0
 {
-	return input.col;
+	return tex.Sample(texSampler, input.uv);
+	//return input.col;
 }
