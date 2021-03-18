@@ -85,7 +85,6 @@ int RendererDX::initialize(unsigned int width, unsigned int height)
 	createRootSignature();
 	createDescriptorHeap();
 	createViewPort(width, height);
-	createConstantBuffers();
 	createSRV();
 	createVertexBuffer();
 
@@ -133,7 +132,7 @@ void RendererDX::frame()
 	D3D12_RESOURCE_BARRIER barrierDesc = {};
 	D3D12_CPU_DESCRIPTOR_HANDLE cdh = _descriptorHeapBackBuffer->GetCPUDescriptorHandleForHeapStart();
 	// DescriptorTable size
-	UINT descriptorTableSize = _device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV) * 2;
+	UINT descriptorTableSize = _device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 	D3D12_GPU_DESCRIPTOR_HANDLE heapHandle = _descriptorHeap[backBufferIndex]->GetGPUDescriptorHandleForHeapStart();
 
 	//Command list allocators can only be reset when the associated command lists have
@@ -171,6 +170,12 @@ void RendererDX::frame()
 	_commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	_commandList->IASetVertexBuffers(0, 1, &_VBView);
 
+	// Descriptor table with SRV
+	heapHandle.ptr += UINT64(descriptorTableSize) * 100;
+	_commandList->SetGraphicsRootDescriptorTable(1, heapHandle);
+
+	// Reset handle for Constant buffers
+	heapHandle = _descriptorHeap[backBufferIndex]->GetGPUDescriptorHandleForHeapStart();
 	for (UINT i = 0; i < 100; i++)
 	{
 		//Set root descriptor table to index 0 in previously set root signature
@@ -417,15 +422,22 @@ void RendererDX::createRootSignature()
 	dtRanges[1].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
 
 	//create a descriptor table
-	D3D12_ROOT_DESCRIPTOR_TABLE dt;
-	dt.NumDescriptorRanges = ARRAYSIZE(dtRanges);
-	dt.pDescriptorRanges = dtRanges;
+	D3D12_ROOT_DESCRIPTOR_TABLE dt[2];
+	dt[0].NumDescriptorRanges = UINT(1);
+	dt[0].pDescriptorRanges = &dtRanges[0];
+
+	dt[1].NumDescriptorRanges = UINT(1);
+	dt[1].pDescriptorRanges = &dtRanges[1];
 
 	//create root parameter
-	D3D12_ROOT_PARAMETER  rootParam[1];
+	D3D12_ROOT_PARAMETER  rootParam[2];
 	rootParam[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
-	rootParam[0].DescriptorTable = dt;
+	rootParam[0].DescriptorTable = dt[0];
 	rootParam[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+
+	rootParam[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+	rootParam[1].DescriptorTable = dt[1];
+	rootParam[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
 
 	D3D12_STATIC_SAMPLER_DESC sDesc;
 	sDesc.Filter = D3D12_FILTER_MIN_MAG_MIP_POINT;
@@ -447,7 +459,7 @@ void RendererDX::createRootSignature()
 	rsDesc.NumParameters = ARRAYSIZE(rootParam);
 	rsDesc.pParameters = rootParam;
 	rsDesc.NumStaticSamplers = 1;
-	rsDesc.pStaticSamplers = &sDesc; // TODO: fatta detta
+	rsDesc.pStaticSamplers = &sDesc;
 
 	ID3DBlob* sBlob;
 	D3D12SerializeRootSignature(
@@ -477,18 +489,11 @@ void RendererDX::createDescriptorHeap()
 	}
 }
 
-void RendererDX::createConstantBuffers()
-{
-	// TODO: Remove function
-}
-
 void RendererDX::createSRV()
 {
 	std::string filename = "../assets/textures/fatboy.png";
 	int w, h, bpp;
 	unsigned char* texture = stbi_load(filename.c_str(), &w, &h, &bpp, STBI_rgb_alpha);
-	// DescriptorTable size
-	int descriptorTableSize = _device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV) * 2;
 
 	Microsoft::WRL::ComPtr<ID3D12Resource> textureUploadHeap;
 
@@ -543,12 +548,8 @@ void RendererDX::createSRV()
 	for (int i = 0; i < 2; i++)
 	{
 		cdh = _descriptorHeap[i]->GetCPUDescriptorHandleForHeapStart();
-		cdh.ptr += _device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-		for (int j = 0; j < 100; j++)
-		{
-			_device->CreateShaderResourceView(_SRVResource, &srvDesc, cdh);
-			cdh.ptr += descriptorTableSize;
-		}
+		cdh.ptr += _device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV) * 100;
+		_device->CreateShaderResourceView(_SRVResource, &srvDesc, cdh);
 	}
 
 	//Command lists are created in the recording state. Since there is nothing to

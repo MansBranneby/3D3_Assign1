@@ -25,7 +25,7 @@ void MeshDX::createConstantBuffer(ID3D12Device5* device, ID3D12DescriptorHeap** 
 	UINT cbSizeAligned = (sizeof(CBStruct) + 255) & ~255;	// 256-byte aligned CB.
 
 	// DescriptorTable size
-	int descriptorTableSize = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV) * 2;
+	int descriptorTableSize = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
 	D3D12_HEAP_PROPERTIES heapProperties = {};
 	heapProperties.Type = D3D12_HEAP_TYPE_UPLOAD;

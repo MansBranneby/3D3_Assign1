@@ -102,7 +102,6 @@ private:
 	void createViewPort(unsigned int width, unsigned int height);
 	void createRootSignature();
 	void createDescriptorHeap();
-	void createConstantBuffers();
 	void createSRV();
 	void createVertexBuffer();
 };
