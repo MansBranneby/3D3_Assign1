@@ -166,8 +166,7 @@ void RendererDX::frame()
 
 	_commandList->OMSetRenderTargets(1, &cdh, true, nullptr);
 
-	float clearColor[] = { 0.2f, 0.2f, 0.2f, 1.0f };
-	_commandList->ClearRenderTargetView(cdh, clearColor, 0, nullptr);
+	_commandList->ClearRenderTargetView(cdh, _clearColour, 0, nullptr);
 
 	_commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	_commandList->IASetVertexBuffers(0, 1, &_VBView);

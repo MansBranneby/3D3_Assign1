@@ -49,21 +49,32 @@ void MaterialDX::setDiffuse(Color c)
 
 int MaterialDX::compileMaterial(std::string& errString)
 {
-	const int MACRO_SIZE = 10;
+	const int MACRO_SIZE = 2;
+	D3D_SHADER_MACRO macros[MACRO_SIZE];
+	macros[0] = { NULL, NULL };
+	macros[1] = { NULL, NULL };
+	std::string macroStr[2] = { "DIFFUSE_SLOT", "0" };
 	std::map<ShaderType, std::string>::iterator it = shaderFileNames.begin();
 	for (it; it != shaderFileNames.end(); it++)
 	{
 		if (it->second != "")
 		{
 			std::vector<std::string> defines = createShaderMacros(it->first);
-			D3D_SHADER_MACRO macros[MACRO_SIZE];
-			for (int i = 0; i < MACRO_SIZE*2; i+=2)
+			
+			for (int i = 0; i < defines.size(); i++)
 			{
-				if (i < defines.size())
-					macros[i / 2] = { defines[i].c_str(), defines[i + 1].c_str()};
-				else
-					macros[i / 2] = { NULL, NULL };
+				if (defines.at(i) == "#define DIFFUSE_SLOT")
+					macros[0] = { macroStr[0].c_str(), macroStr[1].c_str() };
 			}
+			
+			//D3D_SHADER_MACRO macros[MACRO_SIZE];
+			//for (int i = 0; i < MACRO_SIZE*2; i+=2)
+			//{
+			//	if (i < defines.size())
+			//		macros[i / 2] = { defines[i].c_str(), defines[i + 1].c_str()};
+			//	else
+			//		macros[i / 2] = { NULL, NULL };
+			//}
 
 			std::wstring filename = std::wstring(it->second.begin(), it->second.end()).c_str();
 			HRESULT hr = D3DCompileFromFile(

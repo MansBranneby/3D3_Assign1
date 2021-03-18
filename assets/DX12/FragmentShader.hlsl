@@ -13,6 +13,8 @@ SamplerState texSampler : register(s0);
 
 float4 PS_main(PS_IN input) : SV_TARGET0
 {
+#ifdef DIFFUSE_SLOT
 	return tex.Sample(texSampler, input.uv);
-	//return input.col;
+#endif
+	return input.col;
 }
