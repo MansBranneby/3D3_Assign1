@@ -5,6 +5,14 @@ MeshDX::MeshDX(ID3D12Device5* device, ID3D12DescriptorHeap** descriptorHeap, int
 	createConstantBuffer(device, descriptorHeap, nrOfMeshes);
 }
 
+MeshDX::~MeshDX()
+{
+	if (_constantBuffers[0] != NULL)
+		_constantBuffers[0]->Release();
+	if (_constantBuffers[1] != NULL)
+		_constantBuffers[1]->Release();
+}
+
 void MeshDX::mapCBData(int backBufferIndex)
 {
 	CBStruct cbData = static_cast<ConstantBufferDX*>(this->txBuffer)->getCBData();

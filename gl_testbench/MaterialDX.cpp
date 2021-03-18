@@ -10,6 +10,14 @@ MaterialDX::MaterialDX(const std::string& name)
 
 MaterialDX::~MaterialDX()
 {
+	if(_shaderBlob[0] != NULL)
+		_shaderBlob[0]->Release();
+	if (_shaderBlob[1] != NULL)
+		_shaderBlob[1]->Release();
+	if (_shaderBlob[2] != NULL)
+		_shaderBlob[2]->Release();
+	if (_shaderBlob[3] != NULL)
+		_shaderBlob[3]->Release();
 }
 
 void MaterialDX::setShader(const std::string& shaderFileName, ShaderType type)

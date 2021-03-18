@@ -10,7 +10,7 @@ class MeshDX :
 {
 public:
     MeshDX(ID3D12Device5* device, ID3D12DescriptorHeap** descriptorHeap, int nrOfMeshes);
-
+    ~MeshDX();
     void mapCBData(int backBufferIndex);
 
 private:

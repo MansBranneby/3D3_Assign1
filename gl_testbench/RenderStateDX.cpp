@@ -7,6 +7,9 @@ RenderStateDX::RenderStateDX()
 
 RenderStateDX::~RenderStateDX()
 {
+	std::cout << "destroyed renderState" << std::endl;
+	if (_pipeLineState != NULL)
+		_pipeLineState->Release();
 }
 
 void RenderStateDX::setWireFrame(bool wireframe)

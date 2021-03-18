@@ -30,7 +30,9 @@ ConstantBuffer* RendererDX::makeConstantBuffer(std::string NAME, unsigned int lo
 
 RenderState* RendererDX::makeRenderState()
 {
-	return new RenderStateDX();
+	RenderStateDX* rs = new RenderStateDX();
+	_renderStates.push_back(rs);
+	return rs;
 }
 
 Technique* RendererDX::makeTechnique(Material* m, RenderState* r)
@@ -98,6 +100,21 @@ void RendererDX::setWinTitle(const char* title)
 
 int RendererDX::shutdown()
 {
+	SafeRelease(&_device);
+	SafeRelease(&_commandQueue);
+	SafeRelease(&_commandAllocator);
+	SafeRelease(&_commandList);
+	SafeRelease(&_rootSignature);
+	SafeRelease(&_descriptorHeapBackBuffer);
+	SafeRelease(&_descriptorHeap[0]);
+	SafeRelease(&_descriptorHeap[1]);
+	SafeRelease(&_fence);
+	SafeRelease(&_swapChain);
+	SafeRelease(&_renderTargets[0]);
+	SafeRelease(&_renderTargets[1]);
+	SafeRelease(&_SRVResource);
+	SafeRelease(&_VBResource);
+
 	return 0;
 }
 
@@ -184,8 +201,6 @@ void RendererDX::frame()
 		_commandList->DrawInstanced(3, 1, 0, 0);
 		heapHandle.ptr += UINT64(descriptorTableSize);
 	}
-
-
 
 	//Indicate that the back buffer will now be used to present.
 	barrierDesc.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
@@ -313,10 +328,6 @@ void RendererDX::createCommandQueue()
 		IID_PPV_ARGS(&_commandList));
 	if (FAILED(hr))
 		MessageBox(NULL, L"Error", L"Error: _commandList", MB_OK | MB_ICONERROR);
-
-	////Command lists are created in the recording state. Since there is nothing to
-	////record right now and the main loop expects it to be closed, we close it.
-	//_commandList->Close();
 
 	IDXGIFactory5* factory = nullptr;
 	hr = CreateDXGIFactory(IID_PPV_ARGS(&factory));
@@ -548,7 +559,7 @@ void RendererDX::createSRV()
 	for (int i = 0; i < 2; i++)
 	{
 		cdh = _descriptorHeap[i]->GetCPUDescriptorHandleForHeapStart();
-		cdh.ptr += _device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV) * 100;
+		cdh.ptr += _device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV) * (UINT)100;
 		_device->CreateShaderResourceView(_SRVResource, &srvDesc, cdh);
 	}
 

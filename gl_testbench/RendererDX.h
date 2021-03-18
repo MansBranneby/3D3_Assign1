@@ -36,10 +36,8 @@ public:
 
 	Material* makeMaterial(const std::string& name);
 	Mesh* makeMesh();
-	//VertexBuffer* makeVertexBuffer();
 	VertexBuffer* makeVertexBuffer(size_t size, VertexBuffer::DATA_USAGE usage);
 	ConstantBuffer* makeConstantBuffer(std::string NAME, unsigned int location);
-	//	ResourceBinding* makeResourceBinding();
 	RenderState* makeRenderState();
 	Technique* makeTechnique(Material* m, RenderState* r);
 	Texture2D* makeTexture2D();
@@ -53,7 +51,6 @@ public:
 
 	void setClearColor(float, float, float, float);
 	void clearBuffer(unsigned int);
-	//	void setRenderTarget(RenderTarget* rt); // complete parameters
 	void setRenderState(RenderState* ps);
 	void submit(Mesh* mesh);
 	void frame();
@@ -84,7 +81,6 @@ private:
 	D3D12_RECT _scissorRect = {};
 
 	ID3D12Resource1* _renderTargets[2] = {}; // Backbuffer
-//	ID3D12Resource1* _constantBuffers[2] = {};
 	ID3D12Resource1* _SRVResource = nullptr;
 	ID3D12Resource1* _VBResource = nullptr;
 	
@@ -93,6 +89,7 @@ private:
 	float _clearColour[4] = {0.0f, 0.0f, 0.0f, 0.0f};
 	
 	std::vector<Mesh*> _drawList;
+	std::vector<RenderStateDX*> _renderStates;
 	int _nrOfMeshes = 0;
 
 	void createDevice();
